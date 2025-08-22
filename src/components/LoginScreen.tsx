@@ -4,7 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { authService } from '@/services/authService';
 import { rdpService } from '@/services/rdpService';
 import { LoginCredentials } from '@/types/system';
 
@@ -14,7 +13,7 @@ export const LoginScreen = () => {
     password: ''
   });
   const [isLoading, setIsLoading] = useState(false);
-  const [loginStep, setLoginStep] = useState<'login' | 'authenticating' | 'connecting' | 'success'>('login');
+  const [loginStep, setLoginStep] = useState<'login' | 'connecting' | 'success'>('login');
   const { toast } = useToast();
 
   const handleInputChange = (field: keyof LoginCredentials, value: string) => {
@@ -37,34 +36,20 @@ export const LoginScreen = () => {
     }
 
     setIsLoading(true);
-    setLoginStep('authenticating');
+    setLoginStep('connecting');
 
     try {
-      // Validar credenciais no Active Directory
-      const authResult = await authService.validateCredentials(credentials);
+      // Iniciar conexão RDP diretamente
+      const rdpResult = await rdpService.connectRDP(credentials);
       
-      if (authResult.success) {
-        setLoginStep('connecting');
-        
-        // Iniciar conexão RDP
-        const rdpResult = await rdpService.connectRDP(credentials);
-        
-        if (rdpResult.status === 'connected') {
-          setLoginStep('success');
-          toast({
-            title: "Conexão estabelecida",
-            description: "Conectado ao servidor remoto com sucesso",
-          });
-        } else {
-          throw new Error(rdpResult.message || 'Falha na conexão RDP');
-        }
-      } else {
+      if (rdpResult.status === 'connected') {
+        setLoginStep('success');
         toast({
-          title: "Credenciais inválidas",
-          description: authResult.message || "Usuário ou senha incorretos",
-          variant: "destructive",
+          title: "Conexão estabelecida",
+          description: "Conectado ao servidor remoto com sucesso",
         });
-        setLoginStep('login');
+      } else {
+        throw new Error(rdpResult.message || 'Falha na conexão RDP');
       }
     } catch (error) {
       console.error('Erro durante login:', error);
@@ -81,8 +66,6 @@ export const LoginScreen = () => {
 
   const getStepMessage = () => {
     switch (loginStep) {
-      case 'authenticating':
-        return 'Validando credenciais...';
       case 'connecting':
         return 'Estabelecendo conexão remota...';
       case 'success':
@@ -94,7 +77,6 @@ export const LoginScreen = () => {
 
   const getStepIcon = () => {
     switch (loginStep) {
-      case 'authenticating':
       case 'connecting':
         return <Loader2 className="h-5 w-5 animate-spin" />;
       case 'success':
@@ -188,7 +170,6 @@ export const LoginScreen = () => {
           {/* System Info */}
           <div className="mt-8 pt-6 border-t border-border">
             <div className="text-xs text-muted-foreground space-y-1">
-              <div>Servidor AD: {authService.getADServerInfo().server}</div>
               <div>Servidor RDP: {rdpService.getRDPServerInfo().server}</div>
             </div>
           </div>
