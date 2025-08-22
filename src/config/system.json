@@ -1,0 +1,12 @@
+{
+  "activeDirectory": {
+    "server": "ad.empresa.local",
+    "domain": "EMPRESA",
+    "port": 389
+  },
+  "rdpServer": {
+    "server": "rdp.empresa.local",
+    "port": 3389
+  },
+  "freerdpPath": "/usr/bin/xfreerdp"
+}
